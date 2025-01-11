@@ -60,9 +60,6 @@ def generate_pdf():
         if not tex_file:
             return jsonify({"error": "No .tex file found in the ZIP"}), 400
 
-        # Image directory path
-        image_dir = os.path.join(extracted_dir, 'fig')
-
         # PDF filename and path
         pdf_filename = os.path.basename(tex_file).rsplit('.', 1)[0] + '.pdf'
         pdf_path = os.path.join(TEMP_DIR, pdf_filename)
@@ -70,17 +67,17 @@ def generate_pdf():
         # Execute pdflatex with working directory set to the extracted directory
         try:
             subprocess.run(
-                ["pdflatex", "-interaction=nonstopmode", "-output-directory", TEMP_DIR, tex_file],
+                ["xelatex", "-interaction=nonstopmode", "-output-directory", TEMP_DIR, tex_file],
                 check=True,
                 capture_output=True,
                 text=True,
                 cwd=extracted_dir
             )
 
-            # Check for reference and run pdflatex again if necessary
+            # Execute novamente o xelatex para resolver referências, se necessário
             if os.path.exists(os.path.join(TEMP_DIR, pdf_filename.rsplit('.', 1)[0] + '.aux')):
                 subprocess.run(
-                    ["pdflatex", "-interaction=nonstopmode", "-output-directory", TEMP_DIR, tex_file],
+                    ["xelatex", "-interaction=nonstopmode", "-output-directory", TEMP_DIR, tex_file],
                     check=True,
                     capture_output=True,
                     text=True,
