@@ -1,17 +1,15 @@
-# Usar Ubuntu como base
-FROM ubuntu:22.04
+# Usar a imagem do LaTeX como base
+FROM texlive/texlive:latest
 
 # Evitar prompts interativos durante a instalação
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Instalar texlive completo, Python e outras dependências
+# Instalar Python e dependências necessárias
 RUN apt-get update && apt-get install -y \
-    texlive-full \
     python3 \
     python3-pip \
     python3-venv \
-    latexmk \
-    && rm -rf /var/lib/apt/lists/*
+    bash && rm -rf /var/lib/apt/lists/*
 
 # Criar diretório da aplicação
 WORKDIR /app
