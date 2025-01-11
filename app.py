@@ -113,5 +113,59 @@ def generate_pdf():
         except Exception as e:
             print(f"Erro ao limpar arquivos temporários: {e}")
 
+@app.route("/generate-pdf-tex", methods=["POST"])
+def generate_pdf_tex():
+    # Verifica se um arquivo foi enviado
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    tex_file = request.files['file']
+
+    # Verifica se o arquivo é um .tex
+    if not allowed_file(tex_file.filename):
+        return jsonify({"error": "Invalid file type. Only .tex files allowed"}), 400
+
+    # Salva o arquivo .tex
+    tex_filename = secure_filename(tex_file.filename)
+    tex_path = os.path.join(TEMP_DIR, tex_filename)
+    tex_file.save(tex_path)
+
+    # Define o nome do PDF de saída
+    pdf_filename = tex_filename.rsplit('.', 1)[0] + '.pdf'
+    pdf_path = os.path.join(TEMP_DIR, pdf_filename)
+
+    try:
+        # Compila o arquivo .tex usando xelatex
+        subprocess.run(
+            ["xelatex", "-interaction=nonstopmode", "-output-directory", TEMP_DIR, tex_path],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        # Verifica se o arquivo PDF foi gerado
+        if not os.path.exists(pdf_path):
+            return jsonify({"error": "PDF file was not generated"}), 500
+
+        # Retorna o PDF gerado
+        with open(pdf_path, 'rb') as f:
+            pdf_data = f.read()
+
+        response = Response(pdf_data, mimetype='application/pdf')
+        response.headers['Content-Disposition'] = f'attachment; filename={pdf_filename}'
+        return response
+
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": f"LaTeX compilation error: {e.stdout}\n{e.stderr}"}), 500
+
+    finally:
+        # Limpeza dos arquivos temporários
+        try:
+            os.remove(tex_path)  # Remove o arquivo .tex
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)  # Remove o arquivo PDF
+        except Exception as e:
+            print(f"Erro ao limpar arquivos temporários: {e}")
+
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=5000)
