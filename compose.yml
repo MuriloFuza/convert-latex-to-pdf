@@ -1,0 +1,41 @@
+services:
+  latex-service:
+    build: .
+    volumes:
+      - ./temp:/app/temp
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1  # Impede o buffering do Python, útil para logs em tempo real
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.latex-service.service=latex-service"
+      - "traefik.http.routers.latex-service.rule=Host(`latex.localhost`)"
+      - "traefik.http.services.latex-service.loadbalancer.server.port=5000"
+    #  - "traefik.http.routers.latex-service.entryPoints=websecure"
+    #  - "traefik.http.routers.latex-service.tls=true"
+    networks:
+      - traefiknet
+
+  reverse-proxy:
+    image: traefik:v3.0
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker"
+      - "--providers.docker.exposedByDefault=false"
+      - "--providers.docker.watch"
+      - "--entryPoints.http.address=:80"
+      - "--providers.docker.network=traefiknet"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - traefiknet
+
+networks:
+  traefiknet:
+    external: true
