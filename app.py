@@ -3,10 +3,13 @@ import tempfile
 import shutil
 import os
 import subprocess
-from flask import Flask, request, send_file, jsonify, Response
+from flask import Flask, request, jsonify, Response
 from werkzeug.utils import secure_filename
+from flask_cors import CORS
 
 app = Flask(__name__)
+cors = CORS(app)
+
 
 # Configure a secure directory for temporary files
 TEMP_DIR = tempfile.mkdtemp(prefix="tex2pdf_")
@@ -16,6 +19,7 @@ ALLOWED_EXTENSIONS = {'tex'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 @app.route("/generate-pdf", methods=["POST"])
 def generate_pdf():
